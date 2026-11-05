@@ -32,9 +32,9 @@ data/FONTE.md          origem e método de coleta dos dados reais
 
 | Integrante | Papel |
 |---|---|
-| Thiago Branco | _a definir_ |
-| Bruna Costa | _a definir_ |
-| Pedro Luiz Nato | _a definir_ |
+| Thiago Branco ([@thiagobranc0](https://github.com/thiagobranc0)) | C — dashboard e setup (#1–#4) |
+| Bruna Costa ([@Brunamark](https://github.com/Brunamark)) | A — dados reais (#5, #6) |
+| Pedro Luiz Nato ([@pedrrr](https://github.com/pedrrr)) | B — cenário, simulação e testes (#7–#9) |
 
 ## Fluxo de trabalho
 
