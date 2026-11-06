@@ -6,9 +6,18 @@ Issue responsável, para o dashboard sempre abrir sem erro.
 """
 import streamlit as st
 
-from src import cenario, config
+from src import analise, cenario, coleta, config
 
 st.set_page_config(page_title="LAB04 — Testes de Hipótese", layout="wide")
+
+
+@st.cache_data
+def dados_reais():
+    """PRs reais (grupo, horas) ou None se o CSV ainda não foi gerado (Issue #5)."""
+    try:
+        return coleta.carregar_dados_reais()
+    except FileNotFoundError:
+        return None
 
 SECOES = [
     ("cenario", "1. Cenário"),
@@ -75,6 +84,21 @@ texto(getattr(cenario, "TEXTO_DADOS_REAIS", ""), "Issue #5 — fonte e nº de ob
 secao(*SECOES[1], "Sprint 1")
 aviso_pendente("Gráfico G1 — dados reais × simulados", "Issue #3")
 texto(getattr(cenario, "TEXTO_G1", ""), "Issues #3 e #6")
+with st.expander("Checagem do ajuste: estatísticas descritivas e QQ-plot dos dados reais"):
+    reais = dados_reais()
+    if reais is None:
+        aviso_pendente("Dados reais", "Issue #5")
+    else:
+        tabela = analise.descritiva(reais).rename(
+            index=analise.ROTULOS,
+            columns={"mediana": "mediana (h)", "media": "média (h)", "dp": "dp (h)", "q1": "Q1 (h)",
+                     "q3": "Q3 (h)", "max": "máx. (h)", "assimetria_log": "assimetria de ln(h)",
+                     "outliers": "outliers (IQR)", "outliers_log": "outliers em ln(h)"},
+        )
+        st.dataframe(tabela.style.format(precision=2))
+        st.plotly_chart(analise.qq_lognormal(reais, cenario.PARAMS))
+        st.caption("Se os pontos seguem a reta tracejada, ln(horas) é aproximadamente normal, "
+                   "ou seja, a lognormal com os parâmetros de `cenario.PARAMS` descreve bem o grupo.")
 
 # ── 3. Como os testes funcionam (G2) ─────────────────────────────────────────
 secao(*SECOES[2], "Sprint 1")
