@@ -8,6 +8,11 @@ H0 = ("O tempo até o merge tem a mesma distribuição em PRs com e sem bot de r
 H1 = ("O tempo até o merge é diferente em PRs com bot de revisão "
       "(Welch: médias diferentes; Mann-Whitney: P(com bot > sem bot) ≠ 1/2).")
 
+# Notação: X_com e X_sem são os tempos até o merge (horas) de PRs com e sem bot;
+# μ é a média de cada grupo.
+H0_NOTACAO = "H₀: μ_com = μ_sem (Welch)  ·  P(X_com > X_sem) = 1/2 (Mann-Whitney)"
+H1_NOTACAO = "H₁: μ_com ≠ μ_sem (Welch)  ·  P(X_com > X_sem) ≠ 1/2 (Mann-Whitney)"
+
 CAUDAS = ("Bilateral: o bot pode acelerar o merge (revisão mais rápida), mas também pode "
           "atrasá-lo (mais comentários e mais rodadas de ajuste), então testamos as duas direções.")
 
