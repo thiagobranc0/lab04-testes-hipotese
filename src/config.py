@@ -22,4 +22,4 @@ NOMES_TESTES = {
 
 REPO_URL = "https://github.com/thiagobranc0/lab04-testes-hipotese"
 PROJECT_URL = "https://github.com/users/thiagobranc0/projects/1"
-DASHBOARD_URL = "<preencher após publicar>"
+DASHBOARD_URL = "https://github.com/thiagobranc0/lab04-testes-hipotese#readme"  # o README é o dashboard
