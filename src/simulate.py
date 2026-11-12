@@ -1,13 +1,23 @@
-"""Simulação Monte Carlo: t de Welch × Mann-Whitney (par P1).
-Gera data/processed/{simulacao.csv, real_stats.json, h0_stats.csv}."""
-import json, pathlib
+"""Simulação Monte Carlo: t de Welch × Mann-Whitney (par P1) — Issue #16.
+Gera data/processed/{simulacao.csv, real_stats.json, h0_stats.csv}.
+
+Tamanho do efeito d: nos cenários normais (S1, S5), um grupo é deslocado em d desvios-padrão;
+nos lognormais (S2–S4), ln(horas) é deslocado em d·σ, ou seja, a mediana é multiplicada por e^(d·σ).
+Os cenários lognormais com σ real usam a mediana e o σ do grupo sem bot (cenario.PARAMS, Issue #6).
+"""
+import json, pathlib, sys
 import numpy as np, pandas as pd
 from scipy import stats
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from src import cenario, config  # noqa: E402
+
 RAW, OUT = ROOT/'data/raw', ROOT/'data/processed'
-SEED, REPS = 2026, 10_000
-EFFECTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0]   # d: desvios-padrão
+SEED, REPS = config.SEED, config.N_SIM
+N_H0 = 20_000                                            # experimentos sob H0 para o G2
+EFFECTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0]   # d: ver docstring
 SCENARIOS = {  # chave: (gerador, n, rótulo)
     'S1': ('normal', 30, 'S1 Normal, n=30'),
     'S2': ('lognorm_1', 30, 'S2 Lognormal σ=1,0, n=30'),
@@ -31,8 +41,8 @@ def real_params():
     a = real[real.grupo == 'com_bot'].horas_ate_merge.values
     b = real[real.grupo == 'sem_bot'].horas_ate_merge.values
     la, lb = np.log(a), np.log(b)
-    sigma = np.sqrt((la.var(ddof=1)+lb.var(ddof=1))/2)
-    return real, a, b, la, lb, lb.mean(), sigma
+    base = cenario.PARAMS['sem_bot']               # simulação usa o grupo sem bot nos dois grupos
+    return real, a, b, la, lb, np.log(base['mediana']), base['sigma']
 
 def make_generator(rng, mu_ref, sigma):
     def gen(kind, n, d, size):
@@ -54,8 +64,9 @@ def make_generator(rng, mu_ref, sigma):
 def real_stats(a, b, la, lb, sigma, rng):
     tt = stats.ttest_ind(a, b, equal_var=False)
     mw = stats.mannwhitneyu(a, b, alternative='two-sided', method='asymptotic')
-    z = (mw.statistic-450)/np.sqrt(30*30*61/12)
-    boot = [np.median(rng.choice(a, 30))/np.median(rng.choice(b, 30)) for _ in range(5000)]
+    n1, n2 = len(a), len(b)
+    z = (mw.statistic-n1*n2/2)/np.sqrt(n1*n2*(n1+n2+1)/12)
+    boot = [np.median(rng.choice(a, n1))/np.median(rng.choice(b, n2)) for _ in range(5000)]
     tl = stats.ttest_ind(la, lb, equal_var=False)
     sp = np.sqrt((a.var(ddof=1)+b.var(ddof=1))/2)
     out = dict(
@@ -65,7 +76,7 @@ def real_stats(a, b, la, lb, sigma, rng):
         logmu_com=la.mean(), logmu_sem=lb.mean(), sd_log_com=la.std(ddof=1), sd_log_sem=lb.std(ddof=1), sigma=sigma,
         sw_com=stats.shapiro(a).pvalue, sw_sem=stats.shapiro(b).pvalue, sw_log_com=stats.shapiro(la).pvalue, sw_log_sem=stats.shapiro(lb).pvalue,
         t=tt.statistic, df=tt.df, p_welch=tt.pvalue, U=mw.statistic, z=z, p_mw=mw.pvalue,
-        d_cohen=(a.mean()-b.mean())/sp, cliff=2*mw.statistic/900-1, ratio_med=np.median(a)/np.median(b),
+        d_cohen=(a.mean()-b.mean())/sp, cliff=2*mw.statistic/(n1*n2)-1, ratio_med=np.median(a)/np.median(b),
         ratio_lo=np.percentile(boot, 2.5), ratio_hi=np.percentile(boot, 97.5),
         geo_ratio=np.exp(la.mean()-lb.mean()), p_t_log=tl.pvalue)
     return {k: float(v) for k, v in out.items()}
@@ -88,7 +99,7 @@ def main():
         print('cenário', key, 'ok', flush=True)
     pd.DataFrame(rows).to_csv(OUT/'simulacao.csv', index=False)
     # G2: estatísticas sob H0 (cenário S3)
-    x, y = gen('lognorm_real', 30, 0, 20_000)
+    x, y = gen('lognorm_real', 30, 0, N_H0)
     t = stats.ttest_ind(x, y, equal_var=False, axis=1).statistic
     _, z = mann_whitney(x, y)
     pd.DataFrame(dict(t=t, z=z)).to_csv(OUT/'h0_stats.csv', index=False)
