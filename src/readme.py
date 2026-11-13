@@ -8,6 +8,7 @@ import numpy as np, pandas as pd, matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 from scipy import stats
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -115,8 +116,11 @@ real_txt = (f'Os dois testes chegam à mesma conclusão: não há evidência de 
             '(antes e depois do bot), mesmo uma diferença não seria atribuível só ao bot.')
 
 # ---------- Gráficos ----------
-plt.rcParams.update({'font.size': 11, 'axes.spines.top': False, 'axes.spines.right': False, 'savefig.dpi': 170,
-                     'axes.titleweight': 'bold'})
+# Fonte fixa (vem com o matplotlib): as imagens saem iguais em qualquer máquina
+plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 11, 'axes.spines.top': False,
+                     'axes.spines.right': False, 'savefig.dpi': 170, 'axes.titleweight': 'bold'})
+# Vírgula como separador decimal nos eixos, igual aos rótulos e ao texto do README
+VIRGULA = FuncFormatter(lambda v, _: f'{v:g}'.replace('.', ','))
 rng = np.random.default_rng(config.SEED)
 
 # G1 — histograma real × lognormal simulada com os parâmetros de cada grupo (cenario.PARAMS)
@@ -134,7 +138,7 @@ for j, (grupo, x, c, nome) in enumerate([('com_bot', a, CB, 'Com bot'), ('sem_bo
     ax[j].set_xticks([-2, -1, 0, 1, 2, 3]); ax[j].set_xticklabels(['0,01', '0,1', '1', '10', '100', '1000'])
     ax[j].set_xlabel('Horas até o merge (h, escala log)'); ax[j].set_ylim(0, 1.25)
     ax[j].legend(frameon=False, fontsize=8.5, loc='upper left')
-ax[0].set_ylabel('Densidade (na escala log10)')
+ax[0].set_ylabel('Densidade (na escala log10)'); ax[0].yaxis.set_major_formatter(VIRGULA)
 fig.suptitle('G1 — Dados reais × dados simulados', fontweight='bold'); fig.tight_layout(); fig.savefig(IMG/'g1.png'); plt.close()
 
 # G2
@@ -147,6 +151,7 @@ def panel(ax, sim_stat, theo, crit, obs, pobs, lim, col, xl, title):
                     label=f'p-valor do exemplo = {pobs:.3f}'.replace('.', ','))
     ax.axvline(obs, color='k', lw=2.2, label='Valor observado'); ax.set_xlabel(xl); ax.set_ylabel('Densidade'); ax.set_title(title)
     ax.set_ylim(0, ax.get_ylim()[1]*1.5); ax.legend(frameon=False, fontsize=8.5, loc='upper left')
+    ax.yaxis.set_major_formatter(VIRGULA)
 fig, ax = plt.subplots(1, 2, figsize=(12, 4.8))
 panel(ax[0], h0.t.values, lambda v: stats.t.pdf(v, 57), stats.t.ppf(.975, 57), s['t'], s['p_welch'], 6, W,
       'Estatística t (adimensional)', 't de Welch (compara médias)')
@@ -166,7 +171,9 @@ for k, (al, nom) in enumerate((('05', 5), ('01', 1))):
     ax[k].axhline(nom, color=RED, ls='--', label=f'α nominal = {nom}%'); ax[k].set_ylim(0, nom*1.45)
     ax[k].set_xticks(xi); ax[k].set_xticklabels(SC); ax[k].set_xlabel('Cenário (S1 normal; S2–S4 lognormais; S5 outliers)')
     ax[k].set_ylabel('Rejeições com H₀ verdadeira (%)'); ax[k].set_title(f'α = {nom}%')
-ax[0].legend(frameon=False, fontsize=9, loc='lower left')
+    ax[k].yaxis.set_major_formatter(VIRGULA)
+# Legenda em uma linha no topo, acima das barras (antes cobria as barras do S1)
+ax[0].legend(frameon=False, fontsize=9, loc='upper left', ncol=3)
 fig.suptitle('G3 — Erro tipo I dos dois testes em cada cenário', fontweight='bold'); fig.tight_layout()
 fig.savefig(IMG/'g3.png'); plt.close()
 
@@ -178,6 +185,7 @@ for ax, k in zip(axs.ravel(), SC):
         ax.plot(d_.d, d_[f'welch_{al}']*100, ls, marker='o', color=W, alpha=alpha, lw=2.2, ms=4)
         ax.plot(d_.d, d_[f'mw_{al}']*100, ls, marker='s', color=M, alpha=alpha, lw=2.2, ms=4)
     ax.axhline(80, color='gray', ls=':'); ax.set_title(LAB[k], fontsize=10.5); ax.set_xlabel('Tamanho do efeito d (ver seção 2)')
+    ax.xaxis.set_major_formatter(VIRGULA)
 for ax in axs[:, 0]: ax.set_ylabel('Poder = rejeições (%)')
 axs[1, 2].axis('off')
 axs[1, 2].legend(handles=[Line2D([], [], color=W, marker='o', lw=2.2, label='t de Welch'),
