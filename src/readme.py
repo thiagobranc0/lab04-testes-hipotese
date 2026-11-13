@@ -296,7 +296,6 @@ python build.py              # gera images/ e este README (usa data/processed/ s
 python build.py --resimular  # refaz também a simulação Monte Carlo
 python -m src.coleta         # (opcional) refaz a coleta dos PRs reais
 python -m src.analise        # (opcional) estatísticas descritivas e ajuste da lognormal
-streamlit run app.py         # (opcional) versão interativa complementar
 ```
 
 ## Estrutura do repositório
@@ -312,7 +311,6 @@ streamlit run app.py         # (opcional) versão interativa complementar
 | `src/testes.py` | t de Welch, Mann-Whitney e tamanhos de efeito |
 | `src/simulate.py` | simulação Monte Carlo de Q1–Q3 → `data/processed/` |
 | `src/readme.py` | gera `images/` (G1–G4) e este README |
-| `src/graficos.py`, `app.py` | versão interativa em Streamlit (complementar) |
 
 ## Equipe
 
